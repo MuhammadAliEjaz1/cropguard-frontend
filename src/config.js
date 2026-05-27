@@ -1,0 +1,1 @@
+export const API_URL = "https://aliejaz131-cropguard-backend.hf.space";
