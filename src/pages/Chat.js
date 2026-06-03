@@ -115,7 +115,6 @@ export default function Chat() {
   const bottomRef = useRef();
   const inputRef  = useRef();
 
-  // First message is always the welcome card (rendered specially)
   useEffect(() => {
     setMessages([{ role: 'assistant', content: '__welcome__' }]);
   }, []);
@@ -136,16 +135,40 @@ export default function Chat() {
       const history = messages
         .filter(m => m.content !== '__welcome__')
         .map(m => ({ role: m.role, content: m.content }));
-      const res = await axios.post(`${API_URL}/chat`, {
-        message: userMsg, crop, disease, chat_history: history
-      });
-      setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }]);
+
+      const res = await axios.post(
+        `${API_URL}/chat`,
+        { message: userMsg, crop, disease, chat_history: history },
+        { timeout: 60000 }  // ← 60 second timeout (model rotation can take ~10s)
+      );
+
+      // ── FIXED: handle both res.data.response and res.data.result ──
+      const reply = res.data.response || res.data.result || res.data.message;
+
+      if (!reply) {
+        // Backend returned 200 but empty/unexpected shape — log it
+        console.error('Unexpected API response shape:', res.data);
+        throw new Error('Empty response from server');
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       setNewIdx(nextAiIdx);
-    } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.'
-      }]);
+    } catch (err) {
+      // Log the real error so you can debug in browser console
+      console.error('Chat error:', err?.response?.data || err?.message || err);
+
+      const status = err?.response?.status;
+      let errorMsg = 'معذرت، کچھ غلطی ہوئی۔ دوبارہ کوشش کریں۔\n\nSorry, something went wrong. Please try again.';
+
+      if (status === 500) {
+        errorMsg = 'سرور میں خرابی ہے۔ تھوڑی دیر بعد کوشش کریں۔\n\nServer error. Please try again in a moment.';
+      } else if (status === 429) {
+        errorMsg = 'بہت زیادہ سوالات ہو گئے۔ ایک منٹ بعد کوشش کریں۔\n\nToo many requests. Please wait a minute and try again.';
+      } else if (err?.code === 'ECONNABORTED') {
+        errorMsg = 'جواب آنے میں بہت دیر لگی۔ دوبارہ کوشش کریں۔\n\nRequest timed out. Please try again.';
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
     } finally {
       setLoading(false);
     }
