@@ -4,7 +4,17 @@ import { Upload, Loader, CheckCircle, AlertCircle, Leaf } from 'lucide-react';
 import { API_URL } from '../config';
 import { Link } from 'react-router-dom';
 
+const CROPS = [
+  { id: 'wheat',     label: 'Wheat',     urdu: 'گندم',  emoji: '🌾' },
+  { id: 'rice',      label: 'Rice',      urdu: 'چاول',  emoji: '🌱' },
+  { id: 'cotton',    label: 'Cotton',    urdu: 'کاٹن',  emoji: '☁️' },
+  { id: 'sugarcane', label: 'Sugarcane', urdu: 'گنا',   emoji: '🎋' },
+  { id: 'corn',      label: 'Corn',      urdu: 'مکئی',  emoji: '🌽' },
+  { id: 'potato',    label: 'Potato',    urdu: 'آلو',   emoji: '🥔' },
+];
+
 function Detect() {
+  const [crop, setCrop]             = useState(null);
   const [image, setImage]           = useState(null);
   const [preview, setPreview]       = useState(null);
   const [loading, setLoading]       = useState(false);
@@ -21,18 +31,27 @@ function Detect() {
     setError(null);
   };
 
+  const changeCrop = () => {
+    setCrop(null);
+    setImage(null);
+    setPreview(null);
+    setResult(null);
+    setError(null);
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     handleFile(e.dataTransfer.files[0]);
   };
 
   const predict = async () => {
-    if (!image) return;
+    if (!image || !crop) return;
     setLoading(true);
     setError(null);
     try {
       const formData = new FormData();
       formData.append('file', image);
+      formData.append('crop', crop);
       const res = await axios.post(`${API_URL}/predict`, formData);
       setResult(res.data);
     } catch (err) {
@@ -58,32 +77,70 @@ function Detect() {
         <p className="text-green-600 mt-1">فصل کے پتے کی تصویر اپلوڈ کریں</p>
       </div>
 
-      {/* Upload Area */}
-      <div
-        className="border-2 border-dashed border-green-300 rounded-xl p-10 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition mb-6"
-        onClick={() => fileRef.current.click()}
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        {preview ? (
-          <img src={preview} alt="preview" className="max-h-64 mx-auto rounded-lg object-contain" />
-        ) : (
-          <div>
-            <Upload size={48} className="text-green-400 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Drag & drop or click to upload</p>
-            <p className="text-gray-400 text-sm mt-1">JPG, PNG supported</p>
+      {/* Crop Selection */}
+      {!crop ? (
+        <div className="mb-6">
+          <h2 className="text-center text-gray-700 font-semibold mb-4">
+            Select your crop / فصل منتخب کریں
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {CROPS.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCrop(c.id)}
+                className="bg-white border-2 border-green-200 rounded-xl p-5 text-center hover:border-green-500 hover:bg-green-50 transition flex flex-col items-center gap-2"
+              >
+                <span className="text-3xl">{c.emoji}</span>
+                <span className="font-bold text-gray-800">{c.label}</span>
+                <span className="text-green-600 text-sm">{c.urdu}</span>
+              </button>
+            ))}
           </div>
-        )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files[0])}
-        />
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+            <span className="text-gray-700 font-medium">
+              Crop: <span className="font-bold text-green-700">
+                {CROPS.find((c) => c.id === crop)?.emoji} {CROPS.find((c) => c.id === crop)?.label}
+              </span>
+            </span>
+            <button
+              onClick={changeCrop}
+              className="text-green-700 text-sm font-medium underline hover:text-green-900"
+            >
+              Change crop / فصل بدلیں
+            </button>
+          </div>
 
-      {preview && (
+          {/* Upload Area */}
+          <div
+            className="border-2 border-dashed border-green-300 rounded-xl p-10 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition mb-6"
+            onClick={() => fileRef.current.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+          >
+            {preview ? (
+              <img src={preview} alt="preview" className="max-h-64 mx-auto rounded-lg object-contain" />
+            ) : (
+              <div>
+                <Upload size={48} className="text-green-400 mx-auto mb-4" />
+                <p className="text-gray-600 font-medium">Drag & drop or click to upload</p>
+                <p className="text-gray-400 text-sm mt-1">JPG, PNG supported</p>
+              </div>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files[0])}
+            />
+          </div>
+        </>
+      )}
+
+      {crop && preview && (
         <div className="text-center mb-8">
           <button
             onClick={predict}
