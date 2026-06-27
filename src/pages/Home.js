@@ -218,7 +218,7 @@ export default function Home() {
             letterSpacing: '0.08em', marginBottom: 28,
           }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', display: 'inline-block' }} />
-            AI-POWERED · PAKISTAN-TRAINED · FREE TO USE
+            AI-POWERED · FREE TO USE
           </div>
 
           {/* Headline */}
@@ -281,7 +281,7 @@ export default function Home() {
           </div>
 
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 28, letterSpacing: '0.06em' }}>
-            TRAINED ON 45,000+ REAL FIELD IMAGES FROM PAKISTAN
+            TRAINED ON 45,000+ REAL FIELD IMAGES
           </p>
         </div>
       </div>
